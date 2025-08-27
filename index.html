@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Vòng quay may mắn — Lan Rung Beach Resort</title>
+<style>
+:root{--primary:#0ea5e9;--accent:#ef4444;--bg:#f3f8ff;--text:#0f172a;--ring:#0ea5e9;}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text)}
+header{display:flex;gap:10px;align-items:center;justify-content:space-between;background:linear-gradient(90deg,#0284c7,#0ea5e9);color:#fff;padding:12px 16px;box-shadow:0 6px 20px rgba(2,8,23,.18)}
+header .title{font-weight:900;letter-spacing:.3px}
+header .tabs{display:flex;gap:8px}
+.btn{cursor:pointer;border:1px solid rgba(255,255,255,.12);background:transparent;padding:10px 14px;border-radius:10px;font-weight:800;color:#002744}
+.btn.secondary{background:#fff;color:#0f172a;border:0}
+.container{padding:12px;max-width:1100px;margin:0 auto}
+.hidden{display:none}
+.stage{display:flex;flex-direction:column;align-items:center;gap:12px;padding-bottom:20px}
+.wheel-wrap{position:relative;display:flex;align-items:center;justify-content:center}
+#wheelFrame{position:relative;border-radius:50%;border:10px solid var(--ring);width:min(94vmin,820px);height:min(94vmin,820px);overflow:hidden;background:#fff;}
+#wheelImage{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:rotate(0deg);will-change:transform}
+.center-pointer{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(0deg);width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-bottom:min(8vmin,64px) solid var(--accent);z-index:3;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25));}
+.center-badge{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:120px;height:120px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:18px;border:6px solid #fff;box-shadow:0 6px 18px rgba(14,165,233,.35);z-index:4}
+.form-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+input[type="text"],input[type="tel"],input[type="email"],input[type="password"],select{padding:12px;border:1px solid #dbe7f5;border-radius:12px;font-size:16px;min-width:220px}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 6px 18px rgba(2,8,23,.06);margin-bottom:12px}
+.card .hd{padding:12px;border-bottom:1px solid #eef2f7;font-weight:800}
+.card .bd{padding:12px}
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid #e5e7eb;padding:8px;text-align:left}
+th{background:#f8fbff;font-size:12px;color:#334155;text-transform:uppercase;letter-spacing:.4px}
+.btn.filled{background:var(--primary);color:#fff;border:0;box-shadow:0 2px 6px rgba(14,165,233,.35)}
+#arrow{position:absolute;bottom:-12px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:20px solid transparent;border-right:20px solid transparent;border-bottom:50px solid silver;z-index:20;}
+.backdrop{position:fixed;inset:0;background:rgba(15,23,42,.5);display:none;align-items:center;justify-content:center;padding:12px;z-index:20}
+.backdrop.open{display:flex}
+.modal{background:#fff;border-radius:12px;max-width:420px;width:100%;box-shadow:0 26px 56px rgba(2,8,23,.35)}
+.modal .hd{padding:12px;border-bottom:1px solid #eef2f7;font-weight:800}
+.modal .bd{padding:12px;text-align:center}
+.modal .ft{padding:8px;display:flex;justify-content:flex-end;gap:8px}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:15}
+.small-muted{color:#64748b;font-size:13px}
+.note{font-size:13px;color:#475569;margin-top:6px}
+.toast{position:fixed;bottom:20px;right:20px;background:#0ea5e9;color:#fff;padding:10px 16px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-size:14px;opacity:0;transition:opacity .3s ease;z-index:1000}
+.toast.show{opacity:1}
+@media (max-width:640px){.center-badge{width:96px;height:96px;font-size:16px}input[type="text"],input[type="tel"],input[type="email"]{min-width:140px;font-size:15px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="title">🎉 Vòng quay may mắn</div>
+  <div class="tabs">
+    <button id="btnPlayer" class="btn">Khách chơi</button>
+    <button id="btnAdmin" class="btn">Admin</button>
+  </div>
+</header>
+
+<!-- Player -->
+<div class="container" id="tabPlayer">
+  <div class="stage">
+    <div class="wheel-wrap">
+      <div id="wheelFrame">
+        <div class="center-pointer"></div>
+        <img id="wheelImage" alt="wheel" style="transform: rotate(0deg);">
+        <div id="arrow"></div>
+        <div class="center-badge" id="badgeSpin">QUAY</div>
+      </div>
+    </div>
+    <div class="form-row" id="playerForm">
+      <input id="name" type="text" placeholder="Họ và tên *">
+      <input id="phone" type="tel" placeholder="Số điện thoại *">
+      <input id="email" type="email" placeholder="Email *">
+      <input id="company" type="text" placeholder="Công ty *">
+    </div>
+    <div class="form-row"><button id="btnSpin" class="btn secondary">Quay</button></div>
+    <div class="note">Ghi chú: Tất cả trường trên là bắt buộc.</div>
+    <button id="btnToggleHistory" class="btn">Xem lịch sử</button>
+    <div class="card" id="simpleHistoryCard" style="display:none">
+      <div class="hd">Lịch sử quay gần đây</div>
+      <div class="bd"><table id="tblSimpleHistory"><thead><tr><th>Tên</th><th>Thời gian</th><th>Phần thưởng</th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </div>
+</div>
+
+<!-- Admin -->
+<div class="container hidden" id="tabAdmin">
+  <div class="card">
+    <div class="hd">Hình ảnh &amp; Màu sắc</div>
+    <div class="bd">
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+        <label>Ảnh vòng quay <input id="wheelImg" type="file" accept="image/*"></label>
+        <label>Ảnh nền <input id="bgImg" type="file" accept="image/*"></label>
+        <label>Viền <input id="ringColor" type="color" value="#0ea5e9"></label>
+        <label>Kim <input id="pointerColor" type="color" value="#ef4444"></label>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="hd">Phần thưởng (8 ô)</div>
+    <div class="bd">
+      <table id="tblRewards">
+        <thead><tr><th>#</th><th>Tên phần thưởng</th><th>Số lượng ban đầu</th><th>Số lượng còn lại</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+        <button id="btnSavePrizes" class="btn">Lưu phần thưởng</button>
+        <button id="btnResetCounts" class="btn" title="Đặt SL còn lại = SL ban đầu cho tất cả">Reset SL còn lại</button>
+      </div>
+    </div>
+  </div>
+  
+  <div class="card">
+    <div class="hd">Bảo mật Admin</div>
+    <div class="bd">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input id="adminOld" type="password" placeholder="Mật khẩu hiện tại" style="min-width:200px">
+        <input id="adminNew" type="password" placeholder="Mật khẩu mới" style="min-width:200px">
+        <button id="btnChangePass" class="btn">Đổi mật khẩu</button>
+      </div>
+      <div class="small-muted" style="margin-top:8px">Mật khẩu mặc định: <strong>admin123</strong></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="hd">Lịch sử quay</div>
+    <div class="bd">
+      <table id="tblHistory"><thead><tr><th>STT</th><th>Họ tên</th><th>SĐT</th><th>Email</th><th>Công ty</th><th>Phần thưởng</th><th>SL ban đầu</th><th>SL còn lại</th><th>Thời gian</th><th>Xóa</th></tr></thead><tbody></tbody></table>
+      <div style="margin-top:8px"><button id="btnExportCSV" class="btn">Xuất CSV</button><button id="btnClearAll" class="btn" style="background:#ef4444;color:#fff">Xóa toàn bộ</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="backdrop" id="dlg"><div class="modal"><div class="hd">Kết quả</div><div class="bd"><div class="small-muted">Bạn đã trúng:</div><div id="dlgPrize" style="font-size:20px;font-weight:800;margin:8px 0"></div><div id="dlgPlayer" class="small-muted"></div></div><div class="ft"><button id="dlgClose" class="btn filled">Đóng</button></div></div></div>
+<div id="toast" class="toast">Đã lưu thay đổi</div>
+<canvas id="fx"></canvas>
+
+<script>
+const $=(s,r=document)=>r.querySelector(s);const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+// Giữ nguyên khóa cũ để không làm mất dữ liệu đã có
+function getAdminPass(){ return localStorage.getItem(LS.adminPass) || 'admin123'; }
+function openAdminGate(){
+  const inp = prompt('Nhập mật khẩu Admin:');
+  if(inp===null) return false;
+  if(inp===getAdminPass()) return true;
+  alert('Sai mật khẩu'); return false;
+}
+
+const LS={prizes:'lw_prizes_v5',spins:'lw_spins_v3',wheelImg:'lw_wheelImg',pageBg:'lw_pageBg',ring:'lw_ring',pointer:'lw_pointer',bg:'lw_bg',rot:'lw_rot',adminPass:'lw_adminPass'};
+
+function loadJSON(k,fb){try{const v=localStorage.getItem(k);return v?JSON.parse(v):fb;}catch{return fb;}}
+function saveJSON(k,v){localStorage.setItem(k,JSON.stringify(v));}
+function nowStr(){const d=new Date(),p=n=>String(n).padStart(2,'0');return`${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
+
+// Đảm bảo cấu trúc prize có {label, initial, count}
+function ensurePrizes(){
+  let p=loadJSON(LS.prizes,null);
+  if(!p||!Array.isArray(p)||p.length!==8){
+    p=Array.from({length:8},(_,i)=>({label:`Phần thưởng ${i+1}`,initial:100,count:100}));
+    saveJSON(LS.prizes,p);
+    return p;
+  }
+  p=p.map(it=>({label:String(it.label||''),
+                initial:Math.max(0,Number(it.initial??it.count??0)||0),
+                count:Math.max(0,Number(it.count??it.initial??0)||0)}));
+  // Nếu count > initial (do admin giảm initial), kẹp lại
+  p.forEach(it=>{if(it.count>it.initial) it.count=it.initial;});
+  saveJSON(LS.prizes,p);
+  return p;
+}
+function getPrizes(){return ensurePrizes();}
+function setPrizes(arr){saveJSON(LS.prizes,arr);return true;}
+
+function renderRewardsTable(){
+  const list=getPrizes();const tb=$('#tblRewards tbody');tb.innerHTML='';
+  list.forEach((it,idx)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${idx+1}</td>
+      <td><input type="text" data-idx="${idx}" data-key="label" value="${it.label}"></td>
+      <td><input type="number" data-idx="${idx}" data-key="initial" value="${it.initial}" min="0"></td>
+      <td><span data-left="${idx}">${it.count}</span></td>`;
+    tb.appendChild(tr);
+  });
+  let t=null;
+$$('#tblRewards tbody input').forEach(inp=>{
+  inp.addEventListener('blur',()=>{
+    if(saveRewardsFromUI()){ 
+      showToast(); 
+      renderRewardsTable(); 
+    }
+  });
+});
+}
+function saveRewardsFromUI(){
+  const inputs=$$('#tblRewards tbody input');let next=getPrizes();
+  inputs.forEach(inp=>{
+    const i=Number(inp.getAttribute('data-idx'));const k=inp.getAttribute('data-key');
+    if(k==='label'){ next[i].label=inp.value; }
+    if(k==='initial'){
+      const val=Math.max(0,Math.floor(Number(inp.value||0)));
+      next[i].initial=val;
+      // Không reset count, chỉ kẹp nếu count vượt quá initial
+      if(next[i].count>val) next[i].count=val;
+    }
+  });
+  return setPrizes(next);
+}
+function resetCountsToInitial(){
+  if(!confirm('Đặt \"Số lượng còn lại\" = \"Số lượng ban đầu\" cho TẤT CẢ?')) return;
+  const list=getPrizes();
+  list.forEach(p=>{p.count=p.initial;});
+  setPrizes(list);
+  renderRewardsTable();
+  showToast('Đã reset số lượng còn lại');
+}
+
+function pickPrizeIndex(prizes){
+  const available = prizes.map((p,i)=>({...p,i})).filter(p=>p.count>0);
+  if(!available.length) return null;
+
+  // Tổng ban đầu và còn lại để tính tiến trình
+  const totalInitial = available.reduce((sum,p)=>sum+p.initial,0);
+  const totalCurrent = available.reduce((sum,p)=>sum+p.count,0);
+  const progress = 1 - (totalCurrent / totalInitial); // 0: mới bắt đầu, 1: gần hết
+
+  // Xác định số lượng ít nhất hiện tại
+  const minCount = Math.min(...available.map(x=>x.count));
+
+  // Tính trọng số cho từng giải
+  let weighted = [];
+  for (let p of available){
+    let weight = p.count;
+
+    // Nếu là giải ít nhất thì giảm tỉ lệ ở giai đoạn đầu,
+    // tăng dần khi progress tiến về cuối
+    if (p.count === minCount){
+      weight *= (0.2 + 0.8*progress); 
+      // => đầu game còn 20%, cuối game về lại 100%
+    }
+
+    weighted.push({i:p.i, weight});
+  }
+
+  // Random theo trọng số
+  const totalWeight = weighted.reduce((s,p)=>s+p.weight,0);
+  let r = Math.random() * totalWeight;
+  for(let p of weighted){
+    if(r < p.weight) return p.i;
+    r -= p.weight;
+  }
+  return weighted[weighted.length-1].i; // fallback
+}
+
+// Animation tới ô trúng
+let rotation=0;
+function animateToIndex(targetIdx,total){
+  const per=360/total;
+  const degTarget=(360-((targetIdx+0.5)*per)+180)%360; // mũi tên 12h
+  const from=rotation;
+  let toBase=Math.floor(rotation/360)*360+degTarget;
+  if(toBase<=rotation) toBase+=360;
+  const to=toBase+6*360; // quay thêm vài vòng
+  const el=$('#wheelImage');
+  // fallback nếu browser không hỗ trợ WAAPI
+  if(!el.animate){ rotation=to; el.style.transform=`rotate(${rotation}deg)`; return Promise.resolve(); }
+  const anim=el.animate([{transform:`rotate(${from}deg)`},{transform:`rotate(${to}deg)`}],{duration:5200,easing:'cubic-bezier(0.12,0.24,0.05,1)'});
+  return anim.finished.then(()=>{
+    rotation=to;
+    localStorage.setItem(LS.rot,String(rotation));
+    el.style.transform=`rotate(${rotation}deg)`;
+  });
+}
+
+// Hiệu ứng pháo giấy
+const FX=(()=>{
+  const c=$('#fx'),ctx=c.getContext('2d');let W=0,H=0,parts=[],run=false,raf,t;
+  function resize(){W=c.width=innerWidth;H=c.height=innerHeight;}
+  addEventListener('resize',resize);resize();
+  function spawn(n=160){for(let i=0;i<n;i++)parts.push({x:Math.random()*W,y:-10-Math.random()*H*0.3,r:4+Math.random()*6,vx:-2+Math.random()*4,vy:2+Math.random()*3,a:Math.random()*Math.PI*2,va:-0.1+Math.random()*0.2,color:`hsl(${Math.random()*360}deg,85%,60%)`});}
+  function draw(){ctx.clearRect(0,0,W,H);for(let p of parts){p.x+=p.vx;p.y+=p.vy;p.vy+=0.03;p.a+=p.va;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.a);ctx.fillStyle=p.color;ctx.fillRect(-p.r*0.6,-p.r*0.6,p.r*1.2,p.r*1.2);ctx.restore();}parts=parts.filter(p=>p.y<H+30);if(run)raf=requestAnimationFrame(draw);}
+  function burst(){stop();spawn(200);run=true;draw();t=setTimeout(stop,2500);}
+  function stop(){run=false;cancelAnimationFrame(raf);clearTimeout(t);parts=[];ctx.clearRect(0,0,W,H);}
+  return{burst,stop};
+})();
+
+function validateForm(){
+  const name=$('#name').value.trim(),phone=$('#phone').value.trim(),email=$('#email').value.trim(),company=$('#company').value.trim();
+  if(!name||!phone||!email||!company){alert('Vui lòng nhập đầy đủ');return null;}
+  return{name,phone,email,company};
+}
+
+async function spin(){
+  const info=validateForm(); if(!info) return;
+  $('#btnSpin').disabled=true; $('#badgeSpin').style.pointerEvents='none';
+  try{
+    const prizes=getPrizes();
+    const idx=pickPrizeIndex(prizes);
+    if(idx===null){ alert('Hết phần thưởng!'); return; }
+
+    await animateToIndex(idx,8);
+
+    const label=prizes[idx].label;
+    $('#dlgPrize').textContent=label;
+    $('#dlgPlayer').textContent=`Người quay: ${info.name}`;
+    $('#dlg').classList.add('open');
+    FX.burst();
+
+    // Trừ số lượng còn lại & lưu
+    prizes[idx].count=Math.max(0,prizes[idx].count-1);
+    saveJSON(LS.prizes,prizes);
+
+    // Lưu lịch sử – thêm cả initial & count; vẫn kèm percent cho tương thích cũ
+    addSpin({
+      ...info,
+      prize_label: label,
+      prize_index: idx,
+      initial: prizes[idx].initial,
+      count: prizes[idx].count,
+      percent: prizes[idx].count,
+      created_at: nowStr()
+    });
+
+    renderHistory();
+    renderRewardsTable();
+  }catch(e){
+    console.error('Spin error:', e);
+    alert('Có lỗi xảy ra khi quay. Vui lòng thử lại.');
+  }finally{
+    $('#btnSpin').disabled=false;
+    $('#badgeSpin').style.pointerEvents='auto';
+  }
+}
+
+function getSpins(){return loadJSON(LS.spins,[]);}
+function addSpin(r){const a=getSpins();const id=(a.at(-1)?.id||0)+1;a.push({...r,id});saveJSON(LS.spins,a);}
+function delSpin(id){saveJSON(LS.spins,getSpins().filter(x=>x.id!==id));}
+
+function renderHistory(){
+  const rows=getSpins();
+  const tb=$('#tblHistory tbody');tb.innerHTML='';
+  rows.forEach(h=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${h.id}</td>
+      <td>${h.name||''}</td>
+      <td>${h.phone||''}</td>
+      <td>${h.email||''}</td>
+      <td>${h.company||''}</td>
+      <td>${h.prize_label||''}</td>
+      <td>${(h.initial??'')}</td>
+      <td>${(h.count??h.percent??'')}</td>
+      <td>${h.created_at||''}</td>
+      <td><button class="btn" data-del="${h.id}">❌</button></td>`;
+    tb.appendChild(tr);
+  });
+  $$('#tblHistory [data-del]').forEach(btn=>btn.onclick=()=>{delSpin(Number(btn.dataset.del));renderHistory();});
+  renderSimpleHistory();
+}
+function renderSimpleHistory(limit=10){
+  const rows=getSpins();const tb=$('#tblSimpleHistory tbody');tb.innerHTML='';
+  rows.slice(-limit).reverse().forEach(r=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${r.name||''}</td><td>${r.created_at||''}</td><td>${r.prize_label||''}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+function exportCSV(){
+  const rows=getSpins();
+  const header='STT,Họ tên,SĐT,Email,Công ty,Phần thưởng,SL ban đầu,SL còn lại,Index,Thời gian\n';
+  const csv=header+rows.map(r=>[r.id,r.name,r.phone,r.email,r.company,r.prize_label,(r.initial??''),(r.count??r.percent??''),r.prize_index,r.created_at].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\\n');
+  const blob=new Blob(["\\ufeff"+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='lich_su_quay.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+}
+
+function showToast(msg="Đã lưu thay đổi"){const t=$('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1500);}
+
+// Tabs & nút
+$('#btnPlayer').onclick=()=>{$('#tabPlayer').classList.remove('hidden');$('#tabAdmin').classList.add('hidden');};
+$('#btnAdmin').onclick=()=>{ if(openAdminGate()){ $('#tabPlayer').classList.add('hidden');$('#tabAdmin').classList.remove('hidden');renderRewardsTable();renderHistory(); } };
+$('#btnSpin').onclick=spin; $('#badgeSpin').onclick=spin;
+$('#dlgClose').onclick=()=>{$('#dlg').classList.remove('open');FX.stop(); /* không reset rotation để giữ vị trí */};
+$('#btnSavePrizes').onclick=()=>{ if(saveRewardsFromUI()) showToast(); };
+$('#btnResetCounts').onclick=resetCountsToInitial;
+$('#btnExportCSV').onclick=exportCSV;
+$('#btnClearAll').onclick=()=>{if(confirm('Xóa toàn bộ lịch sử?')){saveJSON(LS.spins,[]);renderHistory();}};
+
+$('#btnChangePass').onclick=()=>{
+  const old=$('#adminOld').value.trim();
+  const nw=$('#adminNew').value.trim();
+  if(old!==getAdminPass()){ alert('Sai mật khẩu hiện tại'); return; }
+  if(!nw){ alert('Mật khẩu mới không được rỗng'); return; }
+  localStorage.setItem(LS.adminPass,nw);
+  alert('Đã đổi mật khẩu Admin');
+  $('#adminOld').value=''; $('#adminNew').value='';
+};
+
+$('#btnToggleHistory').onclick=()=>{const card=$('#simpleHistoryCard');if(card.style.display==='none'){card.style.display='block';$('#btnToggleHistory').textContent='Ẩn lịch sử';}else{card.style.display='none';$('#btnToggleHistory').textContent='Xem lịch sử';}};
+
+// Khôi phục ảnh & màu đã lưu
+(function restoreStyle(){
+  const wheel = localStorage.getItem(LS.wheelImg);
+  if(wheel) $('#wheelImage').src = wheel;
+
+  const bg = localStorage.getItem(LS.pageBg);
+  if(bg) document.body.style.backgroundImage = `url(${bg})`;
+
+  const ring = localStorage.getItem(LS.ring);
+  if(ring) $('#wheelFrame').style.borderColor = ring;
+
+  const pointer = localStorage.getItem(LS.pointer);
+  if(pointer) $('.center-pointer').style.borderBottomColor = pointer;
+})();
+
+// Chọn ảnh vòng quay
+$('#wheelImg').addEventListener('change', e=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    $('#wheelImage').src = ev.target.result;
+    localStorage.setItem(LS.wheelImg, ev.target.result);
+  };
+  reader.readAsDataURL(f);
+});
+
+// Chọn ảnh nền
+$('#bgImg').addEventListener('change', e=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    document.body.style.backgroundImage = `url(${ev.target.result})`;
+    localStorage.setItem(LS.pageBg, ev.target.result);
+  };
+  reader.readAsDataURL(f);
+});
+
+// Màu viền
+$('#ringColor').addEventListener('input', e=>{
+  const color = e.target.value;
+  $('#wheelFrame').style.borderColor = color;
+  localStorage.setItem(LS.ring, color);
+});
+
+// Màu kim
+$('#pointerColor').addEventListener('input', e=>{
+  const color = e.target.value;
+  $('.center-pointer').style.borderBottomColor = color;
+  localStorage.setItem(LS.pointer, color);
+});
+
+(function init(){ensurePrizes();renderRewardsTable();renderHistory();renderSimpleHistory();})();
+</script>
+</body>
+</html>
