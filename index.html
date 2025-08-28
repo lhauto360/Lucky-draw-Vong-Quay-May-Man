@@ -290,12 +290,17 @@ function validateForm(){
 }
 
 async function spin(){
-  const info=validateForm(); if(!info) return;
-  $('#btnSpin').disabled=true; $('#badgeSpin').style.pointerEvents='none';
+  const info=validateForm(); 
+  if(!info) return;
+  $('#btnSpin').disabled=true; 
+  $('#badgeSpin').style.pointerEvents='none';
   try{
     const prizes=getPrizes();
     const idx=pickPrizeIndex(prizes);
-    if(idx===null){ alert('Hết phần thưởng!'); return; }
+    if(idx===null){ 
+      alert('Hết phần thưởng!'); 
+      return; 
+    }
 
     await animateToIndex(idx,8);
 
@@ -309,7 +314,7 @@ async function spin(){
     prizes[idx].count=Math.max(0,prizes[idx].count-1);
     saveJSON(LS.prizes,prizes);
 
-    // Lưu lịch sử – thêm cả initial & count; vẫn kèm percent cho tương thích cũ
+    // Lưu lịch sử
     addSpin({
       ...info,
       prize_label: label,
@@ -322,12 +327,18 @@ async function spin(){
 
     renderHistory();
     renderRewardsTable();
+
   }catch(e){
     console.error('Spin error:', e);
     alert('Có lỗi xảy ra khi quay. Vui lòng thử lại.');
   }finally{
     $('#btnSpin').disabled=false;
     $('#badgeSpin').style.pointerEvents='auto';
+    // 🔥 Clear form cho khách tiếp theo
+    $('#name').value='';
+    $('#phone').value='';
+    $('#email').value='';
+    $('#company').value='';
   }
 }
 
