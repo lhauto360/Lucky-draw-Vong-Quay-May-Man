@@ -54,7 +54,7 @@ th{background:#f8fbff;font-size:12px;color:#334155;text-transform:uppercase;lett
     <button id="btnAdmin" class="btn">Admin</button>
   </div>
 </header>
-}
+
 <!-- Player -->
 <div class="container" id="tabPlayer">
   <div class="stage">
@@ -130,34 +130,76 @@ th{background:#f8fbff;font-size:12px;color:#334155;text-transform:uppercase;lett
   </div>
 </div>
 
-<!-- Modal -->
-<div class="backdrop" id="dlg"><div class="modal"><div class="hd">Kết quả</div><div class="bd"><div class="bd">
-  <div id="dlgMsg" class="small-muted"></div> <!-- dòng tiêu đề động -->
-  <div id="dlgPrize" style="font-size:20px;font-weight:800;margin:8px 0"></div><div id="dlgPlayer" class="small-muted"></div></div><div class="ft"><button id="dlgClose" class="btn filled">Đóng</button></div></div></div>
-<div id="toast" class="toast">Đã lưu thay đổi</div>
-<canvas id="fx"></canvas>
-<!-- Popup thông báo lỗi -->
+<!-- Popup kết quả -->
+<div class="backdrop" id="dlg">
+  <div class="modal">
+    <div class="hd">Kết quả</div>
+    <div class="bd">
+      <div id="dlgMsg" class="small-muted"></div>
+      <div id="dlgPrize" style="font-size:20px;font-weight:800;margin:8px 0"></div>
+      <div id="dlgPlayer" class="small-muted"></div>
+    </div>
+    <div class="ft"><button id="dlgClose" class="btn filled">Đóng</button></div>
+  </div>
+</div>
+
+<!-- Popup thông báo -->
 <div class="backdrop" id="dlgAlert">
   <div class="modal">
     <div class="hd">Thông báo</div>
     <div class="bd" id="dlgAlertMsg" style="text-align:center;font-size:16px;padding:12px 0"></div>
+    <div class="ft"><button id="dlgAlertClose" class="btn filled">Đóng</button></div>
+  </div>
+</div>
+
+<!-- Popup đăng nhập Admin -->
+<div class="backdrop" id="dlgAdminLogin">
+  <div class="modal">
+    <div class="hd">Đăng nhập Admin</div>
+    <div class="bd" style="text-align:center">
+      <input id="adminLoginPass" type="password" placeholder="Nhập mật khẩu Admin" style="width:90%;padding:10px;border:1px solid #ddd;border-radius:8px">
+    </div>
     <div class="ft">
-      <button id="dlgAlertClose" class="btn filled">Đóng</button>
+      <button id="btnAdminLoginCancel" class="btn">Hủy</button>
+      <button id="btnAdminLoginOK" class="btn filled">Đăng nhập</button>
     </div>
   </div>
 </div>
 
+<!-- Toast + Canvas -->
+<div id="toast" class="toast">Đã lưu thay đổi</div>
+<canvas id="fx"></canvas>
 <script>
 const $=(s,r=document)=>r.querySelector(s);const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
 // Giữ nguyên khóa cũ để không làm mất dữ liệu đã có
 function getAdminPass(){ return localStorage.getItem(LS.adminPass) || 'admin123'; }
 function openAdminGate(){
-  const inp = prompt('Nhập mật khẩu Admin:'); // (vẫn dùng prompt để nhập nhanh)
-  if (inp === null) return false;
-  if (inp === getAdminPass()) return true;
-  showPopup('❌ Sai mật khẩu Admin');
-  return false;
+  return new Promise((resolve)=>{
+    // mở popup admin login
+    $('#dlgAdminLogin').classList.add('open');
+    $('#adminLoginPass').value='';
+    $('#adminLoginPass').focus();
+
+    // nút Hủy
+    $('#btnAdminLoginCancel').onclick=()=>{
+      $('#dlgAdminLogin').classList.remove('open');
+      resolve(false);
+    };
+
+    // nút OK
+    $('#btnAdminLoginOK').onclick=()=>{
+      const inp = $('#adminLoginPass').value.trim();
+      if(inp===getAdminPass()){
+        $('#dlgAdminLogin').classList.remove('open');
+        resolve(true);
+      }else{
+        // ở đây KHÔNG đóng popup, chỉ báo lỗi
+        showPopup('❌ Sai mật khẩu Admin');
+      }
+    };
+  });
 }
+
 
 const LS={prizes:'lw_prizes_v5',spins:'lw_spins_v3',wheelImg:'lw_wheelImg',pageBg:'lw_pageBg',ring:'lw_ring',pointer:'lw_pointer',bg:'lw_bg',rot:'lw_rot',adminPass:'lw_adminPass'};
 
@@ -432,7 +474,17 @@ function showToast(msg="Đã lưu thay đổi"){const t=$('#toast');t.textConten
 
 // Tabs & nút
 $('#btnPlayer').onclick=()=>{$('#tabPlayer').classList.remove('hidden');$('#tabAdmin').classList.add('hidden');};
-$('#btnAdmin').onclick=()=>{ if(openAdminGate()){ $('#tabPlayer').classList.add('hidden');$('#tabAdmin').classList.remove('hidden');renderRewardsTable();renderHistory(); } };
+$('#btnAdmin').onclick=()=>{
+  openAdminGate().then(ok=>{
+    if(ok){
+      $('#tabPlayer').classList.add('hidden');
+      $('#tabAdmin').classList.remove('hidden');
+      renderRewardsTable();
+      renderHistory();
+    }
+  });
+};
+
 $('#btnSpin').onclick=spin; $('#badgeSpin').onclick=spin;
 $('#dlgClose').onclick=()=>{$('#dlg').classList.remove('open');FX.stop(); /* không reset rotation để giữ vị trí */};
 $('#btnSavePrizes').onclick=()=>{ if(saveRewardsFromUI()) showToast(); };
