@@ -54,7 +54,7 @@ th{background:#f8fbff;font-size:12px;color:#334155;text-transform:uppercase;lett
     <button id="btnAdmin" class="btn">Admin</button>
   </div>
 </header>
-
+}
 <!-- Player -->
 <div class="container" id="tabPlayer">
   <div class="stage">
@@ -131,7 +131,9 @@ th{background:#f8fbff;font-size:12px;color:#334155;text-transform:uppercase;lett
 </div>
 
 <!-- Modal -->
-<div class="backdrop" id="dlg"><div class="modal"><div class="hd">Kết quả</div><div class="bd"><div class="small-muted">Bạn đã trúng:</div><div id="dlgPrize" style="font-size:20px;font-weight:800;margin:8px 0"></div><div id="dlgPlayer" class="small-muted"></div></div><div class="ft"><button id="dlgClose" class="btn filled">Đóng</button></div></div></div>
+<div class="backdrop" id="dlg"><div class="modal"><div class="hd">Kết quả</div><div class="bd"><div class="bd">
+  <div id="dlgMsg" class="small-muted"></div> <!-- dòng tiêu đề động -->
+  <div id="dlgPrize" style="font-size:20px;font-weight:800;margin:8px 0"></div><div id="dlgPlayer" class="small-muted"></div></div><div class="ft"><button id="dlgClose" class="btn filled">Đóng</button></div></div></div>
 <div id="toast" class="toast">Đã lưu thay đổi</div>
 <canvas id="fx"></canvas>
 <!-- Popup thông báo lỗi -->
@@ -150,10 +152,11 @@ const $=(s,r=document)=>r.querySelector(s);const $$=(s,r=document)=>Array.from(r
 // Giữ nguyên khóa cũ để không làm mất dữ liệu đã có
 function getAdminPass(){ return localStorage.getItem(LS.adminPass) || 'admin123'; }
 function openAdminGate(){
-  const inp = prompt('Nhập mật khẩu Admin:');
-  if(inp===null) return false;
-  if(inp===getAdminPass()) return true;
-  alert('Sai mật khẩu'); return false;
+  const inp = prompt('Nhập mật khẩu Admin:'); // (vẫn dùng prompt để nhập nhanh)
+  if (inp === null) return false;
+  if (inp === getAdminPass()) return true;
+  showPopup('❌ Sai mật khẩu Admin');
+  return false;
 }
 
 const LS={prizes:'lw_prizes_v5',spins:'lw_spins_v3',wheelImg:'lw_wheelImg',pageBg:'lw_pageBg',ring:'lw_ring',pointer:'lw_pointer',bg:'lw_bg',rot:'lw_rot',adminPass:'lw_adminPass'};
@@ -164,6 +167,21 @@ function nowStr(){const d=new Date(),p=n=>String(n).padStart(2,'0');return`${p(d
 function showAlertPopup(msg){
   $('#dlgAlertMsg').textContent = msg;
   $('#dlgAlert').classList.add('open');
+}
+function showPopup(message, isResult = false, playerName = ''){
+  if (isResult) {
+    $('#dlgMsg').textContent = 'Bạn đã trúng:';
+    $('#dlgPrize').style.fontSize = '20px';   // cỡ chữ cho kết quả
+    $('#dlgPrize').textContent = message;
+    $('#dlgPlayer').textContent = `Người quay: ${playerName}`;
+  } else {
+    $('#dlgMsg').textContent = 'Thông báo';
+    $('#dlgPrize').style.fontSize = '16px';   // cỡ chữ vừa hơn cho thông báo dài
+    $('#dlgPrize').textContent = message;
+    $('#dlgPlayer').textContent = '';
+  }
+  $('#dlg').classList.add('open');
+  FX.stop();
 }
 
 // Nút đóng popup
@@ -303,17 +321,16 @@ const FX=(()=>{
 })();
 
 function validateForm(){
-  const name=$('#name').value.trim(),
-        phone=$('#phone').value.trim(),
-        email=$('#email').value.trim(),
-        company=$('#company').value.trim();
+  const name   = $('#name').value.trim();
+  const phone  = $('#phone').value.trim();
+  const email  = $('#email').value.trim();
+  const company= $('#company').value.trim();
 
-  if(!name||!phone||!email||!company){
-    showAlertPopup('⚠️ Vui lòng nhập đầy đủ tất cả các trường'); 
+  if (!name || !phone || !email || !company){
+    showPopup('⚠️ Vui lòng nhập đầy đủ tất cả các trường');
     return null;
   }
-
-  return {name, phone, email, company};
+  return { name, phone, email, company };
 }
 
 async function spin(){
@@ -324,18 +341,18 @@ async function spin(){
   try{
     const prizes=getPrizes();
     const idx=pickPrizeIndex(prizes);
-    if(idx===null){ 
-      alert('Hết phần thưởng!'); 
-      return; 
-    }
+    if (idx === null) { 
+  showPopup('❗Hết phần thưởng!'); 
+  return; 
+}
+
 
     await animateToIndex(idx,8);
 
-    const label=prizes[idx].label;
-    $('#dlgPrize').textContent=label;
-    $('#dlgPlayer').textContent=`Người quay: ${info.name}`;
-    $('#dlg').classList.add('open');
-    FX.burst();
+    const label = prizes[idx].label;
+showPopup(label, true, info.name); // isResult = true
+FX.burst();                        // giữ pháo giấy cho kết quả quay
+
 
     // Trừ số lượng còn lại & lưu
     prizes[idx].count=Math.max(0,prizes[idx].count-1);
@@ -357,7 +374,7 @@ async function spin(){
 
   }catch(e){
     console.error('Spin error:', e);
-    alert('Có lỗi xảy ra khi quay. Vui lòng thử lại.');
+    showPopup('⚠️ Có lỗi xảy ra khi quay. Vui lòng thử lại.');
   }finally{
     $('#btnSpin').disabled=false;
     $('#badgeSpin').style.pointerEvents='auto';
@@ -423,14 +440,23 @@ $('#btnResetCounts').onclick=resetCountsToInitial;
 $('#btnExportCSV').onclick=exportCSV;
 $('#btnClearAll').onclick=()=>{if(confirm('Xóa toàn bộ lịch sử?')){saveJSON(LS.spins,[]);renderHistory();}};
 
-$('#btnChangePass').onclick=()=>{
-  const old=$('#adminOld').value.trim();
-  const nw=$('#adminNew').value.trim();
-  if(old!==getAdminPass()){ alert('Sai mật khẩu hiện tại'); return; }
-  if(!nw){ alert('Mật khẩu mới không được rỗng'); return; }
-  localStorage.setItem(LS.adminPass,nw);
-  alert('Đã đổi mật khẩu Admin');
-  $('#adminOld').value=''; $('#adminNew').value='';
+$('#btnChangePass').onclick = () => {
+  const old = $('#adminOld').value.trim();
+  const nw  = $('#adminNew').value.trim();
+
+  if (old !== getAdminPass()){
+    showPopup('❌ Sai mật khẩu hiện tại');
+    return;
+  }
+  if (!nw){
+    showPopup('⚠️ Mật khẩu mới không được để trống');
+    return;
+  }
+
+  localStorage.setItem(LS.adminPass, nw);
+  showPopup('✅ Đã đổi mật khẩu Admin');
+  $('#adminOld').value = '';
+  $('#adminNew').value = '';
 };
 
 $('#btnToggleHistory').onclick=()=>{const card=$('#simpleHistoryCard');if(card.style.display==='none'){card.style.display='block';$('#btnToggleHistory').textContent='Ẩn lịch sử';}else{card.style.display='none';$('#btnToggleHistory').textContent='Xem lịch sử';}};
