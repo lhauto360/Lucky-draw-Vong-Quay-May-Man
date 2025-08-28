@@ -134,6 +134,16 @@ th{background:#f8fbff;font-size:12px;color:#334155;text-transform:uppercase;lett
 <div class="backdrop" id="dlg"><div class="modal"><div class="hd">Kết quả</div><div class="bd"><div class="small-muted">Bạn đã trúng:</div><div id="dlgPrize" style="font-size:20px;font-weight:800;margin:8px 0"></div><div id="dlgPlayer" class="small-muted"></div></div><div class="ft"><button id="dlgClose" class="btn filled">Đóng</button></div></div></div>
 <div id="toast" class="toast">Đã lưu thay đổi</div>
 <canvas id="fx"></canvas>
+<!-- Popup thông báo lỗi -->
+<div class="backdrop" id="dlgAlert">
+  <div class="modal">
+    <div class="hd">Thông báo</div>
+    <div class="bd" id="dlgAlertMsg" style="text-align:center;font-size:16px;padding:12px 0"></div>
+    <div class="ft">
+      <button id="dlgAlertClose" class="btn filled">Đóng</button>
+    </div>
+  </div>
+</div>
 
 <script>
 const $=(s,r=document)=>r.querySelector(s);const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
@@ -151,6 +161,15 @@ const LS={prizes:'lw_prizes_v5',spins:'lw_spins_v3',wheelImg:'lw_wheelImg',pageB
 function loadJSON(k,fb){try{const v=localStorage.getItem(k);return v?JSON.parse(v):fb;}catch{return fb;}}
 function saveJSON(k,v){localStorage.setItem(k,JSON.stringify(v));}
 function nowStr(){const d=new Date(),p=n=>String(n).padStart(2,'0');return`${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
+function showAlertPopup(msg){
+  $('#dlgAlertMsg').textContent = msg;
+  $('#dlgAlert').classList.add('open');
+}
+
+// Nút đóng popup
+$('#dlgAlertClose').onclick = () => {
+  $('#dlgAlert').classList.remove('open');
+};
 
 // Đảm bảo cấu trúc prize có {label, initial, count}
 function ensurePrizes(){
@@ -284,9 +303,17 @@ const FX=(()=>{
 })();
 
 function validateForm(){
-  const name=$('#name').value.trim(),phone=$('#phone').value.trim(),email=$('#email').value.trim(),company=$('#company').value.trim();
-  if(!name||!phone||!email||!company){alert('Vui lòng nhập đầy đủ');return null;}
-  return{name,phone,email,company};
+  const name=$('#name').value.trim(),
+        phone=$('#phone').value.trim(),
+        email=$('#email').value.trim(),
+        company=$('#company').value.trim();
+
+  if(!name||!phone||!email||!company){
+    showAlertPopup('⚠️ Vui lòng nhập đầy đủ tất cả các trường'); 
+    return null;
+  }
+
+  return {name, phone, email, company};
 }
 
 async function spin(){
