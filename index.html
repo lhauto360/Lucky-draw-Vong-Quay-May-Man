@@ -120,6 +120,14 @@ th{background:#f8fbff;font-size:12px;color:#334155;text-transform:uppercase;lett
       <div class="small-muted" style="margin-top:8px">Mật khẩu mặc định: <strong>admin123</strong></div>
     </div>
   </div>
+<div class="card">
+  <div class="hd">Thu thập thông tin khách hàng</div>
+  <div class="bd">
+    <label>
+      <input type="checkbox" id="chkCollectInfo"> Bắt buộc nhập thông tin trước khi quay
+    </label>
+  </div>
+</div>
 
   <div class="card">
     <div class="hd">Lịch sử quay</div>
@@ -200,8 +208,18 @@ function openAdminGate(){
   });
 }
 
-
-const LS={prizes:'lw_prizes_v5',spins:'lw_spins_v3',wheelImg:'lw_wheelImg',pageBg:'lw_pageBg',ring:'lw_ring',pointer:'lw_pointer',bg:'lw_bg',rot:'lw_rot',adminPass:'lw_adminPass'};
+const LS={
+  prizes:'lw_prizes_v5',
+  spins:'lw_spins_v3',
+  wheelImg:'lw_wheelImg',
+  pageBg:'lw_pageBg',
+  ring:'lw_ring',
+  pointer:'lw_pointer',
+  bg:'lw_bg',
+  rot:'lw_rot',
+  adminPass:'lw_adminPass',
+  collect:'lw_collectInfo'   // ✅ thêm dòng này
+};
 
 function loadJSON(k,fb){try{const v=localStorage.getItem(k);return v?JSON.parse(v):fb;}catch{return fb;}}
 function saveJSON(k,v){localStorage.setItem(k,JSON.stringify(v));}
@@ -292,6 +310,24 @@ function resetCountsToInitial(){
   renderRewardsTable();
   showToast('Đã reset số lượng còn lại');
 }
+// --- Thu thập thông tin ---
+function getCollectInfo(){ return localStorage.getItem(LS.collect)==='1'; }
+function setCollectInfo(v){ localStorage.setItem(LS.collect, v?'1':'0'); }
+
+// Khôi phục trạng thái khi vào Admin
+(function restoreCollectInfo(){
+  const chk=$('#chkCollectInfo');
+  if(!chk) return;
+  chk.checked = getCollectInfo();
+  chk.onchange=()=>{
+    setCollectInfo(chk.checked);
+    showToast(chk.checked?'Đã bật thu thập thông tin':'Đã tắt thu thập thông tin');
+    // ✅ Cập nhật giao diện Player ngay lập tức
+    if (typeof togglePlayerFormUpdate === "function") {
+      togglePlayerFormUpdate();
+    }
+  };
+})();
 
 function pickPrizeIndex(prizes){
   const available = prizes.map((p,i)=>({...p,i})).filter(p=>p.count>0);
@@ -363,6 +399,11 @@ const FX=(()=>{
 })();
 
 function validateForm(){
+  if (!getCollectInfo()){ 
+    // Nếu Admin tắt thu thập thông tin
+    return { name:"Khách", phone:"", email:"", company:"" };
+  }
+
   const name   = $('#name').value.trim();
   const phone  = $('#phone').value.trim();
   const email  = $('#email').value.trim();
@@ -374,6 +415,7 @@ function validateForm(){
   }
   return { name, phone, email, company };
 }
+
 
 async function spin(){
   const info=validateForm(); 
@@ -567,6 +609,26 @@ $('#pointerColor').addEventListener('input', e=>{
 });
 
 (function init(){ensurePrizes();renderRewardsTable();renderHistory();renderSimpleHistory();})();
+// Hàm update riêng, có thể gọi lại từ Admin
+function togglePlayerFormUpdate(){
+  const form = $('#playerForm');
+  const note = document.querySelector('.note');
+  if(getCollectInfo()){
+    form.style.display='flex';
+    note.style.display='block';
+  }else{
+    form.style.display='none';
+    note.style.display='none';
+  }
+}
+
+// Khởi tạo và lắng nghe thay đổi từ tab khác
+(function togglePlayerForm(){
+  togglePlayerFormUpdate();
+  window.addEventListener('storage',togglePlayerFormUpdate);
+})();
+
+
 </script>
 </body>
 </html>
